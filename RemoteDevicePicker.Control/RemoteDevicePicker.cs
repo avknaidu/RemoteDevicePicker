@@ -8,32 +8,48 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
 
-namespace App5
+namespace RemoteDevicePicker.Control
 {
     public sealed class RemoteDevicePicker : ContentDialog
     {
         private Dictionary<string, RemoteSystem> DeviceMap { get; set; }
         private ListView _listDevices;
         private ComboBox _listDeviceTypes;
-        private int _selectedDeviceType;
+        private Button _closeButton;
         public ObservableCollection<RemoteSystem> RemoteSystems { get; set; }
+
+        public event EventHandler<RemoteDevicePickerEventArgs> RemoteDevicePickerClosed;
 
         public RemoteDevicePicker()
         {
             this.DefaultStyleKey = typeof(RemoteDevicePicker);
             this.Loading += RemoteDevicePicker_Loading;
             this.Loaded += RemoteDevicePicker_Loaded;
+            
         }
 
         protected override void OnApplyTemplate()
         {
             _listDevices = GetTemplateChild("PART_LISTDEVICES") as ListView;
             _listDeviceTypes = GetTemplateChild("PART_LISTDEVICETYPES") as ComboBox;
-            
+            _closeButton = GetTemplateChild("PART_CLOSEBUTTON") as Button;
+
             var _enumval = Enum.GetValues(typeof(DeviceType)).Cast<DeviceType>();
             _listDeviceTypes.ItemsSource = _enumval.ToList();
             _listDeviceTypes.SelectedIndex = 0;
             base.OnApplyTemplate();
+        }
+
+        private void _closeButton_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            ObservableCollection<RemoteSystem> selectedItems = new ObservableCollection<RemoteSystem>();
+            foreach (RemoteSystem sys in _listDevices.SelectedItems)
+            {
+                selectedItems.Add(sys);
+            }
+            RemoteDevicePickerEventArgs eventArgs = new RemoteDevicePickerEventArgs(selectedItems);
+            RemoteDevicePickerClosed?.Invoke(this, eventArgs);
+            this.Hide();
         }
 
         private void _listDeviceTypes_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -46,6 +62,7 @@ namespace App5
             RemoteSystems = new ObservableCollection<RemoteSystem>();
             DeviceMap = new Dictionary<string, RemoteSystem>();
             _listDeviceTypes.SelectionChanged += _listDeviceTypes_SelectionChanged;
+            _closeButton.Tapped += _closeButton_Tapped;
         }
 
         private async void RemoteDevicePicker_Loading(FrameworkElement sender, object args)
@@ -80,15 +97,18 @@ namespace App5
         internal void UpdateList()
         {
             ObservableCollection<RemoteSystem> bindingList = new ObservableCollection<RemoteSystem>();
-            foreach(RemoteSystem sys in RemoteSystems)
+            if (RemoteSystems != null)
             {
-                if (_listDeviceTypes.SelectedValue.ToString().Equals(DeviceType.All.ToString()))
+                foreach (RemoteSystem sys in RemoteSystems)
                 {
-                    bindingList = RemoteSystems;
-                }
-                else if (_listDeviceTypes.SelectedValue.ToString().Equals(sys.Kind))
-                {
-                    bindingList.Add(sys);
+                    if (_listDeviceTypes.SelectedValue.ToString().Equals(DeviceType.All.ToString()))
+                    {
+                        bindingList = RemoteSystems;
+                    }
+                    else if (_listDeviceTypes.SelectedValue.ToString().Equals(sys.Kind))
+                    {
+                        bindingList.Add(sys);
+                    }
                 }
             }
             _listDevices.ItemsSource = bindingList;
