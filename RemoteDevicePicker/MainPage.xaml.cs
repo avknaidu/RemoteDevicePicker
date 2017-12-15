@@ -16,7 +16,8 @@ namespace App5
         {
             RemoteDevicePicker.Control.RemoteDevicePicker remoteDevicePicker = new RemoteDevicePicker.Control.RemoteDevicePicker()
             {
-                Title = "Pick Remote Device"
+                Title = "Pick Remote Device",
+                DeviceListSelectionMode = ListViewSelectionMode.Extended
             };
             remoteDevicePicker.RemoteDevicePickerClosed += RemoteDevicePicker_RemoteDevicePickerClosed;
             await remoteDevicePicker.ShowAsync();

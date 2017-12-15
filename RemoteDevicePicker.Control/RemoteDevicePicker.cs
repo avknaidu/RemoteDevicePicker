@@ -15,32 +15,28 @@ namespace RemoteDevicePicker.Control
         private Dictionary<string, RemoteSystem> DeviceMap { get; set; }
         private ListView _listDevices;
         private ComboBox _listDeviceTypes;
-        private Button _closeButton;
-        public ObservableCollection<RemoteSystem> RemoteSystems { get; set; }
+        public ObservableCollection<RemoteSystem> RemoteSystems { get; private set; }
+
+        public ListViewSelectionMode DeviceListSelectionMode
+        {
+            get { return (ListViewSelectionMode)GetValue(DeviceListSelectionModeProperty); }
+            set { SetValue(DeviceListSelectionModeProperty, value); }
+        }
+
+        public static readonly DependencyProperty DeviceListSelectionModeProperty = DependencyProperty.Register(nameof(DeviceListSelectionMode), typeof(ListViewSelectionMode), typeof(RemoteDevicePicker), new PropertyMetadata(ListViewSelectionMode.Single));
 
         public event EventHandler<RemoteDevicePickerEventArgs> RemoteDevicePickerClosed;
 
         public RemoteDevicePicker()
         {
             this.DefaultStyleKey = typeof(RemoteDevicePicker);
+            this.SecondaryButtonText = "Done";
+            this.SecondaryButtonClick += RemoteDevicePicker_SecondaryButtonClick;
             this.Loading += RemoteDevicePicker_Loading;
             this.Loaded += RemoteDevicePicker_Loaded;
-            
         }
 
-        protected override void OnApplyTemplate()
-        {
-            _listDevices = GetTemplateChild("PART_LISTDEVICES") as ListView;
-            _listDeviceTypes = GetTemplateChild("PART_LISTDEVICETYPES") as ComboBox;
-            _closeButton = GetTemplateChild("PART_CLOSEBUTTON") as Button;
-
-            var _enumval = Enum.GetValues(typeof(DeviceType)).Cast<DeviceType>();
-            _listDeviceTypes.ItemsSource = _enumval.ToList();
-            _listDeviceTypes.SelectedIndex = 0;
-            base.OnApplyTemplate();
-        }
-
-        private void _closeButton_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        private void RemoteDevicePicker_SecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
         {
             ObservableCollection<RemoteSystem> selectedItems = new ObservableCollection<RemoteSystem>();
             foreach (RemoteSystem sys in _listDevices.SelectedItems)
@@ -50,6 +46,17 @@ namespace RemoteDevicePicker.Control
             RemoteDevicePickerEventArgs eventArgs = new RemoteDevicePickerEventArgs(selectedItems);
             RemoteDevicePickerClosed?.Invoke(this, eventArgs);
             this.Hide();
+        }
+
+        protected override void OnApplyTemplate()
+        {
+            _listDevices = GetTemplateChild("PART_LISTDEVICES") as ListView;
+            _listDeviceTypes = GetTemplateChild("PART_LISTDEVICETYPES") as ComboBox;
+
+            var _enumval = Enum.GetValues(typeof(DeviceType)).Cast<DeviceType>();
+            _listDeviceTypes.ItemsSource = _enumval.ToList();
+            _listDeviceTypes.SelectedIndex = 0;
+            base.OnApplyTemplate();
         }
 
         private void _listDeviceTypes_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -62,7 +69,7 @@ namespace RemoteDevicePicker.Control
             RemoteSystems = new ObservableCollection<RemoteSystem>();
             DeviceMap = new Dictionary<string, RemoteSystem>();
             _listDeviceTypes.SelectionChanged += _listDeviceTypes_SelectionChanged;
-            _closeButton.Tapped += _closeButton_Tapped;
+            //_closeButton.Tapped += _closeButton_Tapped;
         }
 
         private async void RemoteDevicePicker_Loading(FrameworkElement sender, object args)
