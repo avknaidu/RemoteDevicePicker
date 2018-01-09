@@ -7,6 +7,7 @@ using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
+using Windows.UI.Xaml.Media;
 
 namespace RemoteDevicePicker.Control
 {
@@ -15,7 +16,17 @@ namespace RemoteDevicePicker.Control
         private Dictionary<string, RemoteSystem> DeviceMap { get; set; }
         private ListView _listDevices;
         private ComboBox _listDeviceTypes;
+        private ProgressRing _progressRing;
+
         public ObservableCollection<RemoteSystem> RemoteSystems { get; private set; }
+
+        public Brush HeaderLineColor
+        {
+            get { return (Brush)GetValue(HeaderLineColorProperty); }
+            set { SetValue(HeaderLineColorProperty, value); }
+        }
+
+        public static readonly DependencyProperty HeaderLineColorProperty = DependencyProperty.Register(nameof(HeaderLineColor), typeof(Brush), typeof(RemoteDevicePicker), new PropertyMetadata(Application.Current.Resources["SystemControlBackgroundAccentBrush"]));
 
         public ListViewSelectionMode DeviceListSelectionMode
         {
@@ -52,6 +63,7 @@ namespace RemoteDevicePicker.Control
         {
             _listDevices = GetTemplateChild("PART_LISTDEVICES") as ListView;
             _listDeviceTypes = GetTemplateChild("PART_LISTDEVICETYPES") as ComboBox;
+            _progressRing = GetTemplateChild("PART_PROGRESS") as ProgressRing;
 
             var _enumval = Enum.GetValues(typeof(DeviceType)).Cast<DeviceType>();
             _listDeviceTypes.ItemsSource = _enumval.ToList();
@@ -69,7 +81,6 @@ namespace RemoteDevicePicker.Control
             RemoteSystems = new ObservableCollection<RemoteSystem>();
             DeviceMap = new Dictionary<string, RemoteSystem>();
             _listDeviceTypes.SelectionChanged += _listDeviceTypes_SelectionChanged;
-            //_closeButton.Tapped += _closeButton_Tapped;
         }
 
         private async void RemoteDevicePicker_Loading(FrameworkElement sender, object args)
@@ -83,6 +94,7 @@ namespace RemoteDevicePicker.Control
                 m_remoteSystemWatcher.RemoteSystemUpdated += RemoteSystemWatcher_RemoteSystemUpdated;
                 m_remoteSystemWatcher.Start();
             }
+            _progressRing.IsActive = true;
             UpdateList();
         }
 
@@ -90,6 +102,7 @@ namespace RemoteDevicePicker.Control
         {
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
             {
+                _progressRing.IsActive = true;
                 if (DeviceMap.ContainsKey(args.RemoteSystem.Id))
                 {
                     RemoteSystems.Remove(DeviceMap[args.RemoteSystem.Id]);
@@ -117,6 +130,7 @@ namespace RemoteDevicePicker.Control
                         bindingList.Add(sys);
                     }
                 }
+                _progressRing.IsActive = false;
             }
             _listDevices.ItemsSource = bindingList;
         }
@@ -125,6 +139,7 @@ namespace RemoteDevicePicker.Control
         {
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
             {
+                _progressRing.IsActive = true;
                 if (DeviceMap.ContainsKey(args.RemoteSystemId))
                 {
                     RemoteSystems.Remove(DeviceMap[args.RemoteSystemId]);
@@ -137,6 +152,7 @@ namespace RemoteDevicePicker.Control
         {
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
             {
+                _progressRing.IsActive = true;
                 RemoteSystems.Add(args.RemoteSystem);
                 DeviceMap.Add(args.RemoteSystem.Id, args.RemoteSystem);
             });
